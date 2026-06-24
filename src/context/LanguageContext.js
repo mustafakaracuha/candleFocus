@@ -40,8 +40,13 @@ export const translations = {
     notifications: 'Bildirimler',
     timerNotifications: 'Zamanlayıcı Bildirimleri',
     motivationalReminders: 'Motivasyon Hatırlatıcıları',
-    reminderTitle: 'İçindeki Alevi Yak 🔥',
-    reminderBody: 'Bugün mumu henüz yakmadın. Hedeflerine odaklanmak için kendine biraz zaman ayır!'
+    reminderTitle: 'Bugün Mum Yakmaya Ne Dersin?',
+    reminderBody: 'Hedeflerine odaklanmak için kendine biraz zaman ayır!',
+    about: 'Hakkında',
+    developer: 'Geliştirici',
+    version: 'Sürüm',
+    releaseNotes: 'Sürüm Notları',
+    releaseNotesDesc: 'v1.0.0\n• Etkileşimli odaklanma takvimi eklendi.\n• Gelişmiş arka plan sesleri (Yağmur, Orman, Gece, Deniz) eklendi.\n• Akıllı motivasyon bildirimleri sistemi kuruldu.\n• İstastistikler bölümü görselleştirildi.'
   },
   en: {
     focus: 'Light the Candle',
@@ -82,7 +87,12 @@ export const translations = {
     timerNotifications: 'Timer Notifications',
     motivationalReminders: 'Motivational Reminders',
     reminderTitle: 'Light Your Inner Flame 🔥',
-    reminderBody: 'You haven\'t lit the candle today. Take some time for yourself to focus on your goals!'
+    reminderBody: 'You haven\'t lit the candle today. Take some time for yourself to focus on your goals!',
+    about: 'About',
+    developer: 'Developer',
+    version: 'Version',
+    releaseNotes: 'Release Notes',
+    releaseNotesDesc: 'v1.0.0\n• Interactive focus calendar added.\n• Advanced background sounds (Rain, Forest, Night, Ocean) added.\n• Smart motivational notifications system established.\n• Statistics section visualized.'
   }
 };
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Switch, Alert } from 'react-native';
-import { ArrowLeft, Check, RefreshCw, Bell, Heart } from 'lucide-react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Switch, Alert, ScrollView, Modal } from 'react-native';
+import { ArrowLeft, Check, RefreshCw, Bell, Heart, Info, Code, Star, X } from 'lucide-react-native';
 import colors from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { clearOnboarding, getNotificationSettings, saveNotificationSettings } from '../../services/StorageService';
@@ -8,6 +8,7 @@ import { clearOnboarding, getNotificationSettings, saveNotificationSettings } fr
 const SettingsScreen = ({ navigation }) => {
   const { language, changeLanguage, t } = useLanguage();
   const [settings, setSettings] = useState({ timerNotifications: true, motivationalReminders: true });
+  const [isReleaseNotesVisible, setReleaseNotesVisible] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -48,7 +49,7 @@ const SettingsScreen = ({ navigation }) => {
         <View style={{ width: 28 }} />
       </View>
 
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.sectionTitle}>{t('language')}</Text>
         
         <View style={styles.card}>
@@ -116,7 +117,52 @@ const SettingsScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+
+        <View style={{ marginTop: 30 }}>
+          <Text style={styles.sectionTitle}>{t('about')}</Text>
+          <View style={styles.card}>
+            <View style={styles.row}>
+              <View style={styles.rowLeft}>
+                <Code size={20} color={colors.textSecondary} style={{ marginRight: 12 }} />
+                <Text style={styles.rowText}>{t('developer')}</Text>
+              </View>
+              <Text style={styles.infoText}>Mustafa Karacuha</Text>
+            </View>
+            <View style={styles.divider} />
+            <TouchableOpacity 
+              style={styles.row}
+              onPress={() => setReleaseNotesVisible(true)}
+            >
+              <View style={styles.rowLeft}>
+                <Star size={20} color={colors.primary} style={{ marginRight: 12 }} />
+                <Text style={styles.rowText}>{t('releaseNotes')}</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={{ height: 40 }} />
+      </ScrollView>
+
+      <Modal
+        visible={isReleaseNotesVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setReleaseNotesVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('releaseNotes')}</Text>
+              <TouchableOpacity onPress={() => setReleaseNotesVisible(false)}>
+                <X size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.releaseNotesDesc}>{t('releaseNotesDesc')}</Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -182,7 +228,45 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.05)',
     marginLeft: 20,
-  }
+  },
+  infoText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    width: '85%',
+    maxHeight: '70%',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  modalTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  releaseNotesDesc: {
+    color: colors.textSecondary,
+    fontSize: 15,
+    lineHeight: 24,
+  },
 });
 
 export default SettingsScreen;
