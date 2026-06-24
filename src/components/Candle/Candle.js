@@ -203,6 +203,24 @@ const Candle = ({ progress = 1, isLit = false }) => {
     };
   });
 
+  const accumulatedPropsEarly = useAnimatedProps(() => {
+    const meltAmount = 1 - animatedProgress.value;
+    // Appears after 40% of the candle is melted
+    const p = Math.max(0, (meltAmount - 0.4) * 2.5);
+    return {
+      opacity: Math.min(1, p),
+    };
+  });
+
+  const accumulatedPropsLate = useAnimatedProps(() => {
+    const meltAmount = 1 - animatedProgress.value;
+    // Appears after 70% of the candle is melted
+    const p = Math.max(0, (meltAmount - 0.7) * 3);
+    return {
+      opacity: Math.min(1, p),
+    };
+  });
+
   const smokeAnimatedStyle = useAnimatedStyle(() => {
     return {
       opacity: smokeProgress.value > 0 && smokeProgress.value < 1 ? (1 - smokeProgress.value) * 0.9 : 0,
@@ -276,6 +294,12 @@ const Candle = ({ progress = 1, isLit = false }) => {
 
         {/* Wax Puddle at the base */}
         <AnimatedEllipse cx="75" cy={BASE_Y + 3} fill="url(#candleGrad)" animatedProps={puddleProps} />
+
+        {/* Accumulated Overflow Drops & Splatters */}
+        <AnimatedPath d="M 18 288 C 23 288, 23 300, 18 305 C 13 300, 13 288, 18 288 Z" fill="url(#candleGrad)" animatedProps={accumulatedPropsEarly} />
+        <AnimatedPath d="M 132 288 C 137 288, 137 298, 132 303 C 127 298, 127 288, 132 288 Z" fill="url(#candleGrad)" animatedProps={accumulatedPropsLate} />
+        <AnimatedEllipse cx="40" cy="292" rx="7" ry="3" fill="url(#candleGrad)" animatedProps={accumulatedPropsLate} />
+        <AnimatedEllipse cx="110" cy="295" rx="5" ry="2" fill="url(#candleGrad)" animatedProps={accumulatedPropsEarly} />
 
         {/* Candle Bottom Cap */}
         <Ellipse cx="75" cy={BASE_Y} rx="40" ry="15" fill="url(#candleGrad)" />
