@@ -11,6 +11,7 @@ import Animated, {
   withSequence,
   withDelay,
   Easing,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import colors from '../../theme/colors';
 
@@ -18,7 +19,7 @@ const MAX_HEIGHT = 200;
 const BASE_Y = 280;
 
 // Create Animated SVG Components
-const AnimatedRect = Animated.createAnimatedComponent(Rect);
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
 const AnimatedLine = Animated.createAnimatedComponent(Line);
 
@@ -28,10 +29,9 @@ const Candle = ({ progress = 1, isLit = false }) => {
   const dropRightProgress = useSharedValue(0);
   const dropLeftProgress = useSharedValue(0);
   const smokeProgress = useSharedValue(0);
+  const wobbleTimer = useSharedValue(0);
   
-  // Smooth out the progress so it doesn't jump every second
   const animatedProgress = useSharedValue(progress);
-
   const wasLit = useSharedValue(false);
 
   useEffect(() => {
@@ -43,18 +43,27 @@ const Candle = ({ progress = 1, isLit = false }) => {
       wasLit.value = true;
       smokeProgress.value = 0;
     } else if (wasLit.value) {
-      // If it was lit and now it's off (extinguished or given up)
       smokeProgress.value = 0;
       smokeProgress.value = withDelay(1000, withTiming(1, { duration: 2500, easing: Easing.out(Easing.quad) }));
       wasLit.value = false;
     }
   }, [isLit]);
 
-  // Derived values for positions based on smooth progress
   const currentHeight = useDerivedValue(() => Math.max(MAX_HEIGHT * animatedProgress.value, 20));
   const topY = useDerivedValue(() => BASE_Y - currentHeight.value);
 
-  // Flame flickering animation
+  useEffect(() => {
+    if (isLit) {
+      wobbleTimer.value = withRepeat(
+        withTiming(wobbleTimer.value + Math.PI * 2, { duration: 8000, easing: Easing.linear }),
+        -1,
+        false
+      );
+    } else {
+      cancelAnimation(wobbleTimer);
+    }
+  }, [isLit]);
+
   useEffect(() => {
     flameScale.value = withRepeat(
       withSequence(
@@ -76,20 +85,37 @@ const Candle = ({ progress = 1, isLit = false }) => {
     
     // Right drop falling
     dropRightProgress.value = withRepeat(
-      withTiming(1, { duration: 3200, easing: Easing.in(Easing.quad) }),
+      withTiming(1, { duration: 5500, easing: Easing.in(Easing.quad) }),
       -1,
       false
     );
 
-    // Left drop falling (start with delay)
+    // Left drop falling
     setTimeout(() => {
       dropLeftProgress.value = withRepeat(
-        withTiming(1, { duration: 4500, easing: Easing.in(Easing.quad) }),
+        withTiming(1, { duration: 7000, easing: Easing.in(Easing.quad) }),
         -1,
         false
       );
-    }, 1500);
+    }, 2500);
   }, []);
+
+  const meltFactor = useDerivedValue(() => 1 - animatedProgress.value);
+  
+  const topDistortion = useDerivedValue(() => {
+    const w1 = Math.sin(wobbleTimer.value) * 3 * meltFactor.value;
+    const w2 = Math.cos(wobbleTimer.value * 1.5) * 3 * meltFactor.value;
+    const yOffset = Math.sin(wobbleTimer.value * 2) * 1 * meltFactor.value;
+    
+    return {
+      topLeftX: 35 + w1,
+      topRightX: 115 + w2,
+      yOffset: yOffset
+    };
+  });
+
+  const topCx = useDerivedValue(() => (topDistortion.value.topLeftX + topDistortion.value.topRightX) / 2);
+  const topCy = useDerivedValue(() => topY.value + topDistortion.value.yOffset);
 
   const flameAnimatedStyle = useAnimatedStyle(() => {
     let scale = 0;
@@ -105,7 +131,8 @@ const Candle = ({ progress = 1, isLit = false }) => {
 
     return {
       transform: [
-        { translateY: topY.value - 55 },
+        { translateX: topCx.value - 75 },
+        { translateY: topCy.value - 55 },
         { scale },
         { rotate: `${flameRotation.value}deg` }
       ],
@@ -113,7 +140,6 @@ const Candle = ({ progress = 1, isLit = false }) => {
     };
   });
 
-  // A glowing aura around the flame that pulses with the flame's scale
   const glowAnimatedStyle = useAnimatedStyle(() => {
     let scale = 0;
     let glowOpacity = 0;
@@ -128,7 +154,8 @@ const Candle = ({ progress = 1, isLit = false }) => {
 
     return {
       transform: [
-        { translateY: topY.value - 65 },
+        { translateX: topCx.value - 75 },
+        { translateY: topCy.value - 65 },
         { scale }
       ],
       opacity: glowOpacity,
@@ -137,63 +164,94 @@ const Candle = ({ progress = 1, isLit = false }) => {
 
   const dropRightStyle = useAnimatedStyle(() => {
     const isFalling = dropRightProgress.value > 0.05 && dropRightProgress.value < 0.95;
+    const fallProgress = Math.min(dropRightProgress.value / 0.85, 1);
+    const splashProgress = Math.max(0, (dropRightProgress.value - 0.85) / 0.15);
+    
     return {
       transform: [
-        { translateX: 32 },
-        { translateY: topY.value + (currentHeight.value * dropRightProgress.value) },
-        { scaleY: 1 + dropRightProgress.value * 0.5 }
+        { translateX: topDistortion.value.topRightX - 75 - 5 },
+        { translateY: topCy.value + (currentHeight.value * fallProgress) },
+        { scaleY: 1 + (fallProgress * 0.5) - (splashProgress * 0.8) },
+        { scaleX: 1 + (splashProgress * 2) }
       ],
-      opacity: (isFalling && isLit) ? 1 : withTiming(0, {duration: 500}),
+      opacity: (isFalling && isLit) ? 1 - splashProgress : withTiming(0, {duration: 500}),
     };
   });
 
   const dropLeftStyle = useAnimatedStyle(() => {
     const isFalling = dropLeftProgress.value > 0.05 && dropLeftProgress.value < 0.95;
+    const fallProgress = Math.min(dropLeftProgress.value / 0.85, 1);
+    const splashProgress = Math.max(0, (dropLeftProgress.value - 0.85) / 0.15);
+    
     return {
       transform: [
-        { translateX: -40 },
-        { translateY: topY.value + (currentHeight.value * dropLeftProgress.value) },
-        { scaleY: 1 + dropLeftProgress.value * 0.5 }
+        { translateX: topDistortion.value.topLeftX - 75 + 5 },
+        { translateY: topCy.value + (currentHeight.value * fallProgress) },
+        { scaleY: 1 + (fallProgress * 0.5) - (splashProgress * 0.8) },
+        { scaleX: 1 + (splashProgress * 2) }
       ],
-      opacity: (isFalling && isLit) ? 1 : withTiming(0, {duration: 500}),
+      opacity: (isFalling && isLit) ? 1 - splashProgress : withTiming(0, {duration: 500}),
     };
   });
 
   const puddleProps = useAnimatedProps(() => {
-    const puddleScale = 1 - animatedProgress.value; // 0 at start, 1 at finish
+    const puddleScale = 1 - animatedProgress.value;
     return {
       rx: 35 + (30 * puddleScale),
       ry: 10 + (15 * puddleScale),
-      opacity: puddleScale * 1.5, // Invisible at start, fades in as it melts
+      opacity: puddleScale * 1.5,
     };
   });
 
-  // Smoke rising animation when candle extinguishes
   const smokeAnimatedStyle = useAnimatedStyle(() => {
     return {
       opacity: smokeProgress.value > 0 && smokeProgress.value < 1 ? (1 - smokeProgress.value) * 0.9 : 0,
       transform: [
-        { translateY: topY.value - 110 - (smokeProgress.value * 70) }, // smoke rises from the wick
-        { scale: 1 + (smokeProgress.value * 1.8) } // smoke expands outwards softly
+        { translateX: topCx.value - 75 },
+        { translateY: topCy.value - 110 - (smokeProgress.value * 70) },
+        { scale: 1 + (smokeProgress.value * 1.8) }
       ]
     };
   });
 
-  // Animated Props for the SVG elements so they render on the UI thread smoothly
-  const bodyProps = useAnimatedProps(() => ({
-    y: topY.value,
-    height: currentHeight.value,
-  }));
+  const bodyProps = useAnimatedProps(() => {
+    const y = topCy.value;
+    const h = currentHeight.value;
+    const { topLeftX, topRightX } = topDistortion.value;
+    
+    const path = `
+      M 35 ${BASE_Y}
+      C 35 ${BASE_Y - h*0.3}, ${topLeftX} ${y + h*0.2}, ${topLeftX} ${y}
+      L ${topRightX} ${y}
+      C ${topRightX} ${y + h*0.2}, 115 ${BASE_Y - h*0.3}, 115 ${BASE_Y}
+      Z
+    `;
+    
+    return {
+      d: path,
+    };
+  });
 
-  const topProps = useAnimatedProps(() => ({
-    cy: topY.value,
-  }));
+  const topProps = useAnimatedProps(() => {
+    const { topLeftX, topRightX } = topDistortion.value;
+    const width = topRightX - topLeftX;
+    
+    return {
+      cx: topCx.value,
+      cy: topCy.value,
+      rx: width / 2,
+    };
+  });
 
-  const wickProps = useAnimatedProps(() => ({
-    y1: topY.value,
-    y2: topY.value - (8 + 7 * animatedProgress.value), // length 15 at start, 8 at end
-    opacity: 1,
-  }));
+  const wickProps = useAnimatedProps(() => {
+    return {
+      x1: topCx.value,
+      x2: topCx.value + Math.sin(wobbleTimer.value) * 3,
+      y1: topCy.value,
+      y2: topCy.value - (8 + 7 * animatedProgress.value),
+      opacity: 1,
+    };
+  });
 
   return (
     <View style={styles.container}>
@@ -212,71 +270,24 @@ const Candle = ({ progress = 1, isLit = false }) => {
         </Defs>
 
         {/* Plate / Candle Holder */}
-        <Ellipse
-          cx="75"
-          cy={BASE_Y + 8}
-          rx="65"
-          ry="20"
-          fill="#111" // Plate depth/shadow
-        />
-        <Ellipse
-          cx="75"
-          cy={BASE_Y + 5}
-          rx="65"
-          ry="20"
-          fill="#2C2C2E" // Plate top surface
-        />
-        <Ellipse
-          cx="75"
-          cy={BASE_Y + 5}
-          rx="50"
-          ry="14"
-          fill="#1C1C1E" // Plate inner indentation
-        />
+        <Ellipse cx="75" cy={BASE_Y + 8} rx="65" ry="20" fill="#111" />
+        <Ellipse cx="75" cy={BASE_Y + 5} rx="65" ry="20" fill="#2C2C2E" />
+        <Ellipse cx="75" cy={BASE_Y + 5} rx="50" ry="14" fill="#1C1C1E" />
 
         {/* Wax Puddle at the base */}
-        <AnimatedEllipse
-          cx="75"
-          cy={BASE_Y + 3}
-          fill="url(#candleGrad)"
-          animatedProps={puddleProps}
-        />
+        <AnimatedEllipse cx="75" cy={BASE_Y + 3} fill="url(#candleGrad)" animatedProps={puddleProps} />
 
-        {/* Candle Bottom Cap (3D cylinder base resting on plate) */}
-        <Ellipse
-          cx="75"
-          cy={BASE_Y}
-          rx="40"
-          ry="15"
-          fill="url(#candleGrad)"
-        />
+        {/* Candle Bottom Cap */}
+        <Ellipse cx="75" cy={BASE_Y} rx="40" ry="15" fill="url(#candleGrad)" />
 
-        {/* Main Candle Body */}
-        <AnimatedRect
-          x="35"
-          width="80"
-          fill="url(#candleGrad)"
-          animatedProps={bodyProps}
-        />
+        {/* Main Candle Body (Organic Path) */}
+        <AnimatedPath fill="url(#candleGrad)" animatedProps={bodyProps} />
 
-        {/* Candle Top (gives 3D cylinder illusion) */}
-        <AnimatedEllipse
-          cx="75"
-          rx="40"
-          ry="15"
-          fill="#EEDAC0"
-          animatedProps={topProps}
-        />
+        {/* Candle Top (Organic Ellipse) */}
+        <AnimatedEllipse ry="15" fill="#EEDAC0" animatedProps={topProps} />
         
         {/* Wick */}
-        <AnimatedLine
-          x1="75"
-          x2="75"
-          stroke="#333"
-          strokeWidth="3"
-          strokeLinecap="round"
-          animatedProps={wickProps}
-        />
+        <AnimatedLine stroke="#333" strokeWidth="3" strokeLinecap="round" animatedProps={wickProps} />
       </Svg>
 
       {/* Pulsing Light Glow Effect */}
@@ -296,40 +307,16 @@ const Candle = ({ progress = 1, isLit = false }) => {
               <Stop offset="1" stopColor="#FF4B2B" stopOpacity="0.7" />
             </LinearGradient>
           </Defs>
-          <Path
-            d="M20 0 C20 0, 40 30, 20 50 C0 30, 20 0, 20 0 Z"
-            fill="url(#flameGrad)"
-          />
+          <Path d="M20 0 C20 0, 40 30, 20 50 C0 30, 20 0, 20 0 Z" fill="url(#flameGrad)" />
         </Svg>
       </Animated.View>
 
       {/* Smoke Extinguish Effect */}
       <Animated.View style={[styles.smokeContainer, smokeAnimatedStyle]}>
         <Svg width="80" height="100" viewBox="0 0 80 100">
-          {/* Main thick wisp */}
-          <Path
-            d="M40 100 Q 20 60 50 40 T 30 0"
-            stroke="rgba(220, 220, 220, 0.7)"
-            strokeWidth="3"
-            strokeLinecap="round"
-            fill="none"
-          />
-          {/* Smaller left wisp */}
-          <Path
-            d="M40 100 Q 10 70 30 50 T 15 20"
-            stroke="rgba(200, 200, 200, 0.4)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            fill="none"
-          />
-          {/* Taller, thinner right wisp */}
-          <Path
-            d="M40 100 Q 65 55 45 35 T 60 -5"
-            stroke="rgba(240, 240, 240, 0.5)"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            fill="none"
-          />
+          <Path d="M40 100 Q 20 60 50 40 T 30 0" stroke="rgba(220, 220, 220, 0.7)" strokeWidth="3" strokeLinecap="round" fill="none" />
+          <Path d="M40 100 Q 10 70 30 50 T 15 20" stroke="rgba(200, 200, 200, 0.4)" strokeWidth="2" strokeLinecap="round" fill="none" />
+          <Path d="M40 100 Q 65 55 45 35 T 60 -5" stroke="rgba(240, 240, 240, 0.5)" strokeWidth="1.5" strokeLinecap="round" fill="none" />
         </Svg>
       </Animated.View>
 
