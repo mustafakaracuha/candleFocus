@@ -1,0 +1,9 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -workspace ios/CandleFocus.xcworkspace -configuration Debug -scheme CandleFocus -destination "platform=iOS Simulator,name=iPhone 17 Pro"
+
+2026-06-24 13:56:43.312 xcodebuild[35260:92689394] Writing error result bundle to /var/folders/8c/y1dbmfb53xx_s1pls01v03_c0000gr/T/ResultBundle_2026-24-06_13-56-0043.xcresult
+xcodebuild: error: Unable to find a destination matching the provided destination specifier:
+		{ platform:iOS Simulator, OS:latest, name:iPhone 17 Pro }
+
+	Ineligible destinations for the "CandleFocus" scheme:
+		{ platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device, error:iOS 26.5 is not installed. Please download and install the platform from Xcode > Settings > Components. }
