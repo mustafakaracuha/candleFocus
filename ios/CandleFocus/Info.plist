@@ -61,5 +61,9 @@
 		<string>audio</string>
 		<string>fetch</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Odaklanma anlarınızı toplulukla paylaşmak için kamera erişimi gereklidir.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Odaklanma anlarınızı toplulukla paylaşmak için galeri erişimi gereklidir.</string>
 </dict>
 </plist>

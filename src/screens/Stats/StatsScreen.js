@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import colors from '../../theme/colors';
 import { getStats, getHistory } from '../../services/StorageService';
-import { ArrowLeft, Flame, Clock, CalendarCheck, History } from 'lucide-react-native';
+import { ArrowLeft, Flame, Clock, CalendarCheck, History, Settings } from 'lucide-react-native';
 import { useLanguage } from '../../context/LanguageContext';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
@@ -88,7 +88,9 @@ const StatsScreen = ({ navigation }) => {
           <ArrowLeft size={28} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.title}>{t('yourJourney')}</Text>
-        <View style={{ width: 28 }} />
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+          <Settings size={28} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>

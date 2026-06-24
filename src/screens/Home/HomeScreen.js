@@ -119,13 +119,9 @@ const HomeScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <Animated.View style={[styles.header, animatedControlsStyle]}>
-        <TouchableOpacity onPress={() => navigation.navigate('Stats')}>
-          <BarChart2 size={26} color={colors.textSecondary} />
-        </TouchableOpacity>
+        <View style={{ width: 26 }} /> {/* Spacer to keep title centered */}
         <Text style={styles.title}>CandleFocus</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-          <Settings size={26} color={colors.textSecondary} />
-        </TouchableOpacity>
+        <View style={{ width: 26 }} /> {/* Spacer to keep title centered */}
       </Animated.View>
 
       <View style={styles.mainArea}>
@@ -266,7 +262,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timerContainer: {
-    marginTop: 40,
+    marginTop: -30,
+    marginBottom: 20,
   },
   controls: {
     paddingBottom: 40,
