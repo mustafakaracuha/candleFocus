@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Alert } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import colors from '../../theme/colors';
@@ -32,10 +32,16 @@ const HomeScreen = ({ navigation }) => {
   const { t } = useLanguage();
 
   const opacity = useSharedValue(1);
+  const atmosphereTimeoutRef = useRef(null);
+  const lighterTimeoutRef = useRef(null);
 
   useEffect(() => {
     TimerService.setupNotifications();
-    return () => TimerService.stop(); // Cleanup on unmount
+    return () => {
+      TimerService.stop();
+      clearTimeout(atmosphereTimeoutRef.current);
+      clearTimeout(lighterTimeoutRef.current);
+    };
   }, []);
 
   const handleStart = () => {
@@ -43,12 +49,12 @@ const HomeScreen = ({ navigation }) => {
     setLighterPlaying(true);
     
     // Play atmosphere after lighter sound finishes
-    setTimeout(() => {
+    atmosphereTimeoutRef.current = setTimeout(() => {
       setAtmospherePlaying(true);
     }, 2000);
     
     // Automatically hide lighter component after 2 seconds to prevent re-play on re-renders
-    setTimeout(() => {
+    lighterTimeoutRef.current = setTimeout(() => {
       setLighterPlaying(false);
     }, 2000);
 
@@ -78,6 +84,8 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const handleStop = () => {
+    clearTimeout(atmosphereTimeoutRef.current);
+    clearTimeout(lighterTimeoutRef.current);
     setIsActive(false);
     TimerService.stop();
     setAtmospherePlaying(false);
@@ -148,7 +156,6 @@ const HomeScreen = ({ navigation }) => {
         <Video
           source={atmosphereSource}
           audioOnly={true}
-          paused={false}
           repeat={true}
           playInBackground={true}
           playWhenInactive={true}
